@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TypeScript to Confluent Schema Converter</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom font for a clean look */
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f3f4f6; /* Light gray background */
+      }
+      /* Style for the pre-formatted output */
+      pre {
+        background-color: #1f2937; /* Dark background for code */
+        color: #f9fafb; /* Light text color */
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto; /* Allow horizontal scrolling for long lines */
+        font-size: 0.875rem; /* text-sm */
+        line-height: 1.5; /* leading-relaxed */
+      }
+    </style>
+  </head>
+  <body class="p-4 sm:p-8 flex items-center justify-center min-h-screen">
+    <div
+      class="max-w-4xl w-full bg-white shadow-xl rounded-lg p-6 sm:p-8 space-y-6"
+    >
+      <h1 class="text-3xl font-extrabold text-gray-900 text-center mb-6">
+        TypeScript to Confluent Schema Converter
+      </h1>
+
+      <!-- Input Section -->
+      <div class="space-y-4">
+        <label
+          for="typescriptInput"
+          class="block text-lg font-medium text-gray-700"
+        >
+          Enter TypeScript Type Definition:
+        </label>
+        <textarea
+          id="typescriptInput"
+          rows="12"
+          class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 sm:text-base resize-y"
+          placeholder="Example: &#10;{&#10;  id: string;&#10;  name: string;&#10;  age?: number;&#10;  images?: string[];&#10;  customer?: {&#10;    phone: string;&#10;    address: string;&#10;  };&#10;  order: {&#10;    orderId: string;&#10;    total: number;&#10;  };&#10;}"
+        ></textarea>
+      </div>
+
+      <!-- Convert Button -->
+      <div class="flex justify-center">
+        <button
+          id="convertButton"
+          class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+        >
+          Convert to Confluent Schema
+        </button>
+      </div>
+
+      <!-- Output Section -->
+      <div class="space-y-4">
+        <h2 class="text-xl font-semibold text-gray-800">
+          Generated Confluent Schema:
+        </h2>
+        <pre id="outputSchema" class="text-sm"></pre>
+      </div>
+    </div>
+
+    <script>
+      // Function to convert TypeScript type string to Confluent Schema (JSON object)
+      function convertTypescriptToConfluentSchema(typescriptTypeString) {
+        // Define a mapping from TypeScript types to Confluent Schema types
+        const typeMapping = {
+          string: "string",
+          number: "int", // Assuming 'number' maps to 'int'. Could be 'float' or 'double' if needed.
+          boolean: "boolean"
+          // Add more mappings for other types like 'object', etc., if required.
+          // For 'any', 'unknown', 'Date', etc., specific Avro types would need to be decided.
+        };
+
+        // Initialize the base schema structure
+        const confluentSchema = {
+          doc: "Add your schema documentation here.", // Placeholder for documentation
+          name: "MyRecord", // Placeholder for record name, user can change this
+          type: "record",
+          fields: []
+        };
+
+        // Clean up the input string: remove outer curly braces and extra spaces
+        const cleanedInput = typescriptTypeString
+          .trim()
+          .replace(/^{|}$/g, "")
+          .trim();
+
+        // Custom parsing for field definitions to handle nested objects
+        const fieldDefinitions = [];
+        let currentField = "";
+        let braceCount = 0; // To keep track of nested curly braces
+
+        for (let i = 0; i < cleanedInput.length; i++) {
+          const char = cleanedInput[i];
+          if (char === "{") {
+            braceCount++;
+          } else if (char === "}") {
+            braceCount--;
+          }
+
+          // Split only if we are at a semicolon and not inside any nested braces
+          if (char === ";" && braceCount === 0) {
+            fieldDefinitions.push(currentField.trim());
+            currentField = ""; // Reset current field
+          } else {
+            currentField += char;
+          }
+        }
+        // Add the last field if it's not empty (no trailing semicolon or single field input)
+        if (currentField.trim() !== "") {
+          fieldDefinitions.push(currentField.trim());
+        }
+
+        // Filter out any empty strings that might result from extra semicolons or parsing
+        const filteredFieldDefinitions = fieldDefinitions.filter(Boolean);
+
+        filteredFieldDefinitions.forEach((fieldDef) => {
+          // Split each definition into name and type parts
+          // Only split on the first colon to handle object type definitions like "name: { ... }"
+          const firstColonIndex = fieldDef.indexOf(":");
+          if (firstColonIndex === -1) {
+            console.warn(
+              `Skipping malformed field definition: "${fieldDef}". Expected format "name: type".`
+            );
+            return;
+          }
+
+          let fieldName = fieldDef.substring(0, firstColonIndex).trim();
+          let tsType = fieldDef.substring(firstColonIndex + 1).trim();
+
+          let isOptional = false;
+          let isArray = false;
+          let arrayItemType = "";
+          let isObject = false;
+          let objectContent = "";
+
+          // Check if the field is optional (e.g., 'name?: string')
+          if (fieldName.endsWith("?")) {
+            isOptional = true;
+            fieldName = fieldName.slice(0, -1); // Remove '?'
+          }
+
+          // Check if the type is an array (e.g., 'string[]' or '{...}[]')
+          if (tsType.endsWith("[]")) {
+            isArray = true;
+            arrayItemType = tsType.slice(0, -2).trim(); // Get the type inside the array, e.g., 'string' or '{...}'
+          } else if (tsType.startsWith("{") && tsType.endsWith("}")) {
+            // Check if the type is an object
+            isObject = true;
+            objectContent = tsType.substring(1, tsType.length - 1).trim(); // Extract content inside braces
+          }
+
+          let field; // Declare field with let so it can be reassigned
+
+          if (isObject) {
+            // Recursively call the function to convert the nested object's fields
+            const nestedSchema =
+              convertTypescriptToConfluentSchema(objectContent);
+            const recordName =
+              fieldName.charAt(0).toUpperCase() + fieldName.slice(1); // Capitalize for record name
+
+            let objectTypeDefinition = {
+              type: "record",
+              name: recordName,
+              fields: nestedSchema.fields // Use the fields from the recursive call
+            };
+
+            if (isOptional) {
+              field = {
+                default: null, // Optional objects default to null
+                name: fieldName,
+                type: ["null", objectTypeDefinition]
+              };
+            } else {
+              field = {
+                name: fieldName,
+                type: objectTypeDefinition
+              };
+            }
+          } else if (isArray) {
+            let typeValue;
+            if (arrayItemType.startsWith("{") && arrayItemType.endsWith("}")) {
+              // It's an array of objects, recursively convert the object definition
+              const nestedSchema =
+                convertTypescriptToConfluentSchema(arrayItemType);
+              // Derive a meaningful name for the nested record, e.g., "OrderItem" for "order" field
+              const recordName =
+                fieldName.charAt(0).toUpperCase() + fieldName.slice(1) + "Item";
+              typeValue = {
+                type: "array",
+                items: {
+                  type: "record",
+                  name: recordName,
+                  fields: nestedSchema.fields
+                }
+              };
+            } else {
+              // It's an array of primitive types
+              typeValue = {
+                type: "array",
+                items: typeMapping[arrayItemType.toLowerCase()] || "string" // Map the item type
+              };
+            }
+
+            if (isOptional) {
+              field = {
+                default: [], // Default for optional arrays is an empty array
+                name: fieldName,
+                type: ["null", typeValue] // Optional array also includes null in its type
+              };
+            } else {
+              field = {
+                name: fieldName,
+                type: typeValue
+              };
+            }
+          } else {
+            // Handle non-array, non-object (primitive) types
+            const baseAvroType = typeMapping[tsType.toLowerCase()] || "string"; // Default to 'string' if unknown
+            if (isOptional) {
+              field = {
+                default: null, // Placed first as requested
+                name: fieldName,
+                type: ["null", baseAvroType]
+              };
+            } else {
+              field = {
+                name: fieldName,
+                type: baseAvroType
+              };
+            }
+          }
+
+          confluentSchema.fields.push(field);
+        });
+
+        return confluentSchema;
+      }
+
+      // Get elements from the DOM
+      const typescriptInput = document.getElementById("typescriptInput");
+      const convertButton = document.getElementById("convertButton");
+      const outputSchema = document.getElementById("outputSchema");
+
+      // Add event listener to the convert button
+      convertButton.addEventListener("click", () => {
+        const inputString = typescriptInput.value;
+        try {
+          const schema = convertTypescriptToConfluentSchema(inputString);
+          // Display the JSON schema in a preformatted block
+          outputSchema.textContent = JSON.stringify(schema, null, 2);
+        } catch (error) {
+          // Display error message if conversion fails
+          outputSchema.textContent = `Error: ${error.message}\n\nPlease check your TypeScript input format.`;
+          console.error("Conversion error:", error);
+        }
+      });
+
+      // Initialize with an example when the page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        typescriptInput.value = `{
+  id: string;
+  name: string;
+  age?: number;
+  isActive?: boolean;
+  email?: string;
+  images?: string[];
+  tags: string[];
+  customer?: {
+    phone: string;
+    address: string;
+    contactMethods?: string[];
+  };
+  order: {
+    orderId: string;
+    total: number;
+    items?: {
+      productId: string;
+      quantity: number;
+    }[];
+  };
+}`;
+        convertButton.click(); // Automatically convert the example
+      });
+    </script>
+  </body>
+</html>
