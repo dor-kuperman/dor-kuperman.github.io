@@ -1,295 +1,389 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TypeScript to Confluent Schema Converter</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 11 Keyboard Shortcuts</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      /* Custom font for a clean look */
-      body {
-        font-family: "Inter", sans-serif;
-        background-color: #f3f4f6; /* Light gray background */
-      }
-      /* Style for the pre-formatted output */
-      pre {
-        background-color: #1f2937; /* Dark background for code */
-        color: #f9fafb; /* Light text color */
-        padding: 1rem;
-        border-radius: 0.5rem;
-        overflow-x: auto; /* Allow horizontal scrolling for long lines */
-        font-size: 0.875rem; /* text-sm */
-        line-height: 1.5; /* leading-relaxed */
-      }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .shortcut-card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+            transition: transform 0.2s ease-in-out;
+        }
+        .shortcut-card:hover {
+            transform: translateY(-3px);
+        }
+        .category-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .category-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out; /* Increased transition time for smoother expansion */
+        }
+        .category-content.expanded {
+            max-height: 9999px; /* Set to a very large value to ensure all content is shown */
+            transition: max-height 0.7s ease-in; /* Slightly longer ease-in for a better feel */
+        }
+        .arrow-icon {
+            transition: transform 0.3s ease-out;
+        }
+        .arrow-icon.rotated {
+            transform: rotate(90deg);
+        }
+        /* Style for key icons */
+        .key-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.5rem; /* Equivalent to w-10 */
+            height: 2.5rem; /* Equivalent to h-10 */
+            padding: 0.25rem 0.5rem; /* px-2 py-1 */
+            background-color: #e2e8f0; /* bg-slate-200 */
+            border-radius: 0.375rem; /* rounded-md */
+            font-weight: 600; /* font-semibold */
+            color: #334155; /* text-slate-700 */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+            margin: 0 0.25rem; /* mx-1 */
+            vertical-align: middle;
+            line-height: 1; /* Ensures text/svg is centered vertically */
+        }
+        .key-icon.windows-key {
+            background-color: #0078d4; /* Windows blue */
+            color: white;
+            padding: 0.25rem;
+        }
+        .key-icon.arrow {
+            min-width: 2rem;
+            height: 2rem;
+            padding: 0;
+        }
+        .key-icon.plus {
+            min-width: 1.5rem;
+            height: 1.5rem;
+            padding: 0;
+        }
     </style>
-  </head>
-  <body class="p-4 sm:p-8 flex items-center justify-center min-h-screen">
-    <div
-      class="max-w-4xl w-full bg-white shadow-xl rounded-lg p-6 sm:p-8 space-y-6"
-    >
-      <h1 class="text-3xl font-extrabold text-gray-900 text-center mb-6">
-        TypeScript to Confluent Schema Converter
-      </h1>
+</head>
+<body class="p-4 sm:p-6 md:p-8 lg:p-10">
 
-      <!-- Input Section -->
-      <div class="space-y-4">
-        <label
-          for="typescriptInput"
-          class="block text-lg font-medium text-gray-700"
-        >
-          Enter TypeScript Type Definition:
-        </label>
-        <textarea
-          id="typescriptInput"
-          rows="12"
-          class="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 sm:text-base resize-y"
-          placeholder="Example: &#10;{&#10;  id: string;&#10;  name: string;&#10;  age?: number;&#10;  images?: string[];&#10;  customer?: {&#10;    phone: string;&#10;    address: string;&#10;  };&#10;  order: {&#10;    orderId: string;&#10;    total: number;&#10;  };&#10;}"
-        ></textarea>
-      </div>
+    <div class="max-w-4xl mx-auto bg-white p-6 sm:p-8 md:p-10 rounded-xl shadow-lg">
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 text-center">Windows 11 Keyboard Shortcuts</h1>
+        <p class="text-gray-600 mb-8 text-center">
+            Boost your productivity with these essential keyboard shortcuts for Windows 11, categorized for easy navigation.
+        </p>
 
-      <!-- Convert Button -->
-      <div class="flex justify-center">
-        <button
-          id="convertButton"
-          class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
-        >
-          Convert to Confluent Schema
-        </button>
-      </div>
-
-      <!-- Output Section -->
-      <div class="space-y-4">
-        <h2 class="text-xl font-semibold text-gray-800">
-          Generated Confluent Schema:
-        </h2>
-        <pre id="outputSchema" class="text-sm"></pre>
-      </div>
+        <div id="shortcuts-container">
+            <!-- Shortcuts will be dynamically loaded here -->
+        </div>
     </div>
 
     <script>
-      // Function to convert TypeScript type string to Confluent Schema (JSON object)
-      function convertTypescriptToConfluentSchema(typescriptTypeString) {
-        // Define a mapping from TypeScript types to Confluent Schema types
-        const typeMapping = {
-          string: "string",
-          number: "int", // Assuming 'number' maps to 'int'. Could be 'float' or 'double' if needed.
-          boolean: "boolean"
-          // Add more mappings for other types like 'object', etc., if required.
-          // For 'any', 'unknown', 'Date', etc., specific Avro types would need to be decided.
-        };
+        // Function to create SVG icon for keys
+        function createKeyIcon(keyName) {
+            let svgContent = '';
+            let extraClass = '';
 
-        // Initialize the base schema structure
-        const confluentSchema = {
-          doc: "Add your schema documentation here.", // Placeholder for documentation
-          name: "MyRecord", // Placeholder for record name, user can change this
-          type: "record",
-          fields: []
-        };
-
-        // Clean up the input string: remove outer curly braces and extra spaces
-        const cleanedInput = typescriptTypeString
-          .trim()
-          .replace(/^{|}$/g, "")
-          .trim();
-
-        // Custom parsing for field definitions to handle nested objects
-        const fieldDefinitions = [];
-        let currentField = "";
-        let braceCount = 0; // To keep track of nested curly braces
-
-        for (let i = 0; i < cleanedInput.length; i++) {
-          const char = cleanedInput[i];
-          if (char === "{") {
-            braceCount++;
-          } else if (char === "}") {
-            braceCount--;
-          }
-
-          // Split only if we are at a semicolon and not inside any nested braces
-          if (char === ";" && braceCount === 0) {
-            fieldDefinitions.push(currentField.trim());
-            currentField = ""; // Reset current field
-          } else {
-            currentField += char;
-          }
-        }
-        // Add the last field if it's not empty (no trailing semicolon or single field input)
-        if (currentField.trim() !== "") {
-          fieldDefinitions.push(currentField.trim());
-        }
-
-        // Filter out any empty strings that might result from extra semicolons or parsing
-        const filteredFieldDefinitions = fieldDefinitions.filter(Boolean);
-
-        filteredFieldDefinitions.forEach((fieldDef) => {
-          // Split each definition into name and type parts
-          // Only split on the first colon to handle object type definitions like "name: { ... }"
-          const firstColonIndex = fieldDef.indexOf(":");
-          if (firstColonIndex === -1) {
-            console.warn(
-              `Skipping malformed field definition: "${fieldDef}". Expected format "name: type".`
-            );
-            return;
-          }
-
-          let fieldName = fieldDef.substring(0, firstColonIndex).trim();
-          let tsType = fieldDef.substring(firstColonIndex + 1).trim();
-
-          let isOptional = false;
-          let isArray = false;
-          let arrayItemType = "";
-          let isObject = false;
-          let objectContent = "";
-
-          // Check if the field is optional (e.g., 'name?: string')
-          if (fieldName.endsWith("?")) {
-            isOptional = true;
-            fieldName = fieldName.slice(0, -1); // Remove '?'
-          }
-
-          // Check if the type is an array (e.g., 'string[]' or '{...}[]')
-          if (tsType.endsWith("[]")) {
-            isArray = true;
-            arrayItemType = tsType.slice(0, -2).trim(); // Get the type inside the array, e.g., 'string' or '{...}'
-          } else if (tsType.startsWith("{") && tsType.endsWith("}")) {
-            // Check if the type is an object
-            isObject = true;
-            objectContent = tsType.substring(1, tsType.length - 1).trim(); // Extract content inside braces
-          }
-
-          let field; // Declare field with let so it can be reassigned
-
-          if (isObject) {
-            // Recursively call the function to convert the nested object's fields
-            const nestedSchema =
-              convertTypescriptToConfluentSchema(objectContent);
-            const recordName =
-              fieldName.charAt(0).toUpperCase() + fieldName.slice(1); // Capitalize for record name
-
-            let objectTypeDefinition = {
-              type: "record",
-              name: recordName,
-              fields: nestedSchema.fields // Use the fields from the recursive call
-            };
-
-            if (isOptional) {
-              field = {
-                default: null, // Optional objects default to null
-                name: fieldName,
-                type: ["null", objectTypeDefinition]
-              };
-            } else {
-              field = {
-                name: fieldName,
-                type: objectTypeDefinition
-              };
+            switch (keyName) {
+                case 'Windows key':
+                    // Updated Windows logo SVG from the provided URL
+                    svgContent = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"><path d="M0 72.35l237.5-.06v205.1l-237.5.06V72.35zm262.5-.06l237.5-.06v205.1l-237.5.06V72.29zm-262.5 237.5l237.5-.06v118.06l-237.5.06V309.85zm262.5-.06l237.5-.06v118.06l-237.5.06V309.79Z"/></svg>`;
+                    extraClass = 'windows-key';
+                    break;
+                case 'Alt':
+                    svgContent = 'Alt';
+                    break;
+                case 'Ctrl':
+                    svgContent = 'Ctrl';
+                    break;
+                case 'Shift':
+                    svgContent = 'Shift';
+                    break;
+                case 'Enter':
+                    svgContent = 'Enter';
+                    break;
+                case 'Tab':
+                    svgContent = 'Tab';
+                    break;
+                case 'Esc':
+                    svgContent = 'Esc';
+                    break;
+                case 'Backspace':
+                    svgContent = 'Bksp';
+                    break;
+                case 'Home':
+                    svgContent = 'Home';
+                    break;
+                case 'End':
+                    svgContent = 'End';
+                    break;
+                case 'Print Screen (PrtScn)':
+                    svgContent = 'PrtScn';
+                    break;
+                case 'F2':
+                case 'F5':
+                case 'F11':
+                    svgContent = keyName;
+                    break;
+                case 'Plus sign (+)':
+                    svgContent = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>`;
+                    extraClass = 'plus';
+                    break;
+                case 'Left arrow':
+                    svgContent = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>`;
+                    extraClass = 'arrow';
+                    break;
+                case 'Right arrow':
+                    svgContent = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`;
+                    extraClass = 'arrow';
+                    break;
+                case 'Up arrow':
+                    svgContent = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>`;
+                    extraClass = 'arrow';
+                    break;
+                case 'Down arrow':
+                    svgContent = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>`;
+                    extraClass = 'arrow';
+                    break;
+                case 'Num Lock':
+                    svgContent = 'Num Lock';
+                    break;
+                case 'Del':
+                    svgContent = 'Del';
+                    break;
+                default:
+                    svgContent = keyName; // Fallback for any unhandled keys
             }
-          } else if (isArray) {
-            let typeValue;
-            if (arrayItemType.startsWith("{") && arrayItemType.endsWith("}")) {
-              // It's an array of objects, recursively convert the object definition
-              const nestedSchema =
-                convertTypescriptToConfluentSchema(arrayItemType);
-              // Derive a meaningful name for the nested record, e.g., "OrderItem" for "order" field
-              const recordName =
-                fieldName.charAt(0).toUpperCase() + fieldName.slice(1) + "Item";
-              typeValue = {
-                type: "array",
-                items: {
-                  type: "record",
-                  name: recordName,
-                  fields: nestedSchema.fields
+            return `<span class="key-icon ${extraClass}">${svgContent}</span>`;
+        }
+
+        // Define the keyboard shortcuts data
+        const shortcutsData = [
+            {
+                category: "General Productivity",
+                shortcuts: [
+                    { keys: "Windows key", description: "Opens or closes the Start menu, giving you access to apps, settings, and power options. <br> <strong>Good for:</strong> Quickly launching applications or searching for files." },
+                    { keys: "Windows key + A", description: "Opens Quick Settings, where you can easily toggle Wi-Fi, Bluetooth, Focus Assist, and more. <br> <strong>Good for:</strong> Adjusting common system settings on the fly." },
+                    { keys: "Windows key + C", description: "Opens the Chat feature, allowing you to quickly start conversations with your contacts. <br> <strong>Good for:</strong> Instant messaging and connecting with others." },
+                    { keys: "Windows key + D", description: "Toggles between showing your active windows and showing a clean desktop. <br> <strong>Good for::</strong> Hiding open applications to quickly access desktop icons or files." },
+                    { keys: "Windows key + E", description: "Launches File Explorer, your primary tool for navigating files and folders. <br> <strong>Good for:</strong> Accessing documents, pictures, and other files quickly." },
+                    { keys: "Windows key + G", description: "Opens the Xbox Game Bar, a customizable overlay for recording gameplay, taking screenshots, and monitoring performance. <br> <strong>Good for::</strong> Gamers who want quick access to gaming tools." },
+                    { keys: "Windows key + H", description: "Activates voice typing, allowing you to dictate text instead of typing. <br> <strong>Good for:</strong> Hands-free text input and accessibility." },
+                    { keys: "Windows key + I", description: "Opens the Settings app, where you can configure all aspects of your Windows experience. <br> <strong>Good for:</strong> Changing system preferences, personalizing your PC, and managing devices." },
+                    { keys: "Windows key + K", description: "Opens the Cast menu, allowing you to connect to wireless displays and audio devices. <br> <strong>Good for:</strong> Projecting your screen to a TV or external monitor." },
+                    { keys: "Windows key + L", description: "Locks your computer screen, requiring a password to regain access, or allows you to switch to a different user account. <br> <strong>Good for:</strong> Securing your PC when stepping away." },
+                    { keys: "Windows key + M", description: "Minimizes all open windows to the taskbar. <br> <strong>Good for:</strong> Clearing your screen to see the desktop." },
+                    { keys: "Windows key + R", description: "Opens the Run dialog box, which you can use to open programs, files, folders, or websites by typing their names. <br> <strong>Good for:</strong> Quickly launching specific applications or system tools." },
+                    { keys: "Windows key + S", description: "Opens the Search interface, allowing you to find apps, documents, web results, and more. <br> <strong>Good for:</strong> Finding anything on your computer or the web." },
+                    { keys: "Windows key + V", description: "Opens the clipboard history panel, showing all items you've copied recently. <br> <strong>Good for:</strong> Pasting multiple items without re-copying them." },
+                    { keys: "Windows key + W", description: "Opens the Widgets board, providing quick access to personalized information like news, weather, and calendar events. <br> <strong>Good for:</strong> Getting quick updates at a glance." },
+                    { keys: "Windows key + X", description: "Opens the Quick Link menu (also known as the Power User menu), providing shortcuts to administrative tools like Device Manager and Disk Management. <br> <strong>Good for:</strong> Advanced users needing quick access to system utilities." },
+                    { keys: "Windows key + Z", description: "Opens snap layouts, which help you arrange multiple windows efficiently on your screen. <br> <strong>Good for:</strong> Organizing your workspace for multitasking." },
+                    { keys: "Alt + Tab", description: "Switches between all currently open applications and windows. <br> <strong>Good for:</strong> Quickly navigating between different programs you are using." },
+                    { keys: "Alt + F4", description: "Closes the currently active application or window. If no window is active, it opens the Shut Down Windows dialog. <br> <strong>Good for:</strong> Exiting programs efficiently." },
+                    { keys: "Ctrl + Alt + Del", description: "Opens the Windows Security screen, providing options to lock, switch user, sign out, change a password, or open Task Manager. <br> <strong>Good for:</strong> Accessing critical system functions or troubleshooting." },
+                    { keys: "Print Screen (PrtScn)", description: "Captures a screenshot of your entire screen and saves it to your clipboard. You can then paste it into an image editor. <br> <strong>Good for:</strong> Taking full-screen captures." },
+                    { keys: "Windows key + Shift + S", description: "Launches the Snipping Tool, allowing you to select a specific portion of your screen to capture as an image. <br> <strong>Good for:</strong> Capturing specific areas of your screen with precision." },
+                    { keys: "F2", description: "Renames the currently selected file, folder, or icon. <br> <strong>Good for:</strong> Quickly changing names of items in File Explorer or on the desktop." },
+                    { keys: "F5", description: "Refreshes the content of the active window, such as a web page in a browser or files in a folder. <br> <strong>Good for:</strong> Ensuring you see the latest information or content." },
+                ]
+            },
+            {
+                category: "Text Manipulation",
+                shortcuts: [
+                    { keys: "Ctrl + C", description: "Copies the selected text or item to the clipboard. <br> <strong>Good for:</strong> Duplicating information without cutting it." },
+                    { keys: "Ctrl + X", description: "Cuts (removes) the selected text or item and places it on the clipboard. <br> <strong>Good for:</strong> Moving information from one place to another." },
+                    { keys: "Ctrl + V", description: "Pastes the content from the clipboard into the current location. <br> <strong>Good for:</strong> Inserting copied or cut information." },
+                    { keys: "Ctrl + Z", description: "Undoes the last action you performed. <br> <strong>Good for:</strong> Correcting mistakes or reverting changes." },
+                    { keys: "Ctrl + Y", description: "Redoes the last action that was undone. <br> <strong>Good for:</strong> Reapplying a change you previously undid." },
+                    { keys: "Ctrl + A", description: "Selects all content within the current document, window, or text field. <br> <strong>Good for:</strong> Quickly selecting everything to copy, cut, or delete." },
+                    { keys: "Ctrl + B", description: "Applies bold formatting to the selected text in supported applications. <br> <strong>Good for:</strong> Highlighting important text." },
+                    { keys: "Ctrl + I", description: "Applies italic formatting to the selected text in supported applications. <br> <strong>Good for:</strong> Emphasizing text." },
+                    { keys: "Ctrl + U", description: "Applies underline formatting to the selected text in supported applications. <br> <strong>Good for:</strong> Underlining text for emphasis." },
+                    { keys: "Ctrl + Shift + Esc", description: "Directly opens the Task Manager, which allows you to monitor and manage running applications and processes. <br> <strong>Good for:</strong> Force-quitting unresponsive programs or monitoring system performance." },
+                    { keys: "Home", description: "Moves the text cursor to the beginning of the current line. <br> <strong>Good for:</strong> Quickly navigating within a line of text." },
+                    { keys: "End", description: "Moves the text cursor to the end of the current line. <br> <strong>Good for:</strong> Quickly navigating within a line of text." },
+                    { keys: "Ctrl + Home", description: "Moves the text cursor to the very beginning of the document or text area. <br> <strong>Good for:</strong> Jumping to the start of a long document." },
+                    { keys: "Ctrl + End", description: "Moves the text cursor to the very end of the document or text area. <br> <strong>Good for:</strong> Jumping to the end of a long document." },
+                    { keys: "Shift + Home", description: "Selects text from the current cursor position up to the beginning of the line. <br> <strong>Good for:</strong> Quickly selecting a line of text backwards." },
+                    { keys: "Shift + End", description: "Selects text from the current cursor position up to the end of the line. <br> <strong>Good for:</strong> Quickly selecting a line of text forwards." },
+                ]
+            },
+            {
+                category: "File Explorer",
+                shortcuts: [
+                    { keys: "Alt + D", description: "Selects the address bar in File Explorer, allowing you to type a path directly. <br> <strong>Good for:</strong> Quickly navigating to a specific folder path." },
+                    { keys: "Ctrl + N", description: "Opens a new File Explorer window. <br> <strong>Good for:</strong> Working with multiple folders simultaneously." },
+                    { keys: "Ctrl + W", description: "Closes the currently active File Explorer window. <br> <strong>Good for:</strong> Closing windows quickly." },
+                    { keys: "Ctrl + Shift + N", description: "Creates a new folder in the current directory. <br> <strong>Good for:</strong> Organizing files by creating new storage locations." },
+                    { keys: "Alt + Enter", description: "Opens the Properties dialog box for the selected file or folder, showing details like size, creation date, and security settings. <br> <strong>Good for:</strong> Viewing or changing item properties." },
+                    { keys: "Alt + Left arrow", description: "Navigates back to the previously viewed folder in File Explorer. <br> <strong>Good for:</strong> Retracing your steps through folders." },
+                    { keys: "Alt + Right arrow", description: "Navigates forward to the next folder in File Explorer (after using Alt + Left arrow). <br> <strong>Good for:</strong> Moving forward in your browsing history." },
+                    { keys: "Alt + Up arrow", description: "Navigates to the parent folder (one level up) from the current directory. <br> <strong>Good for:</strong> Moving up the directory tree." },
+                    { keys: "F11", description: "Toggles full-screen mode for the active File Explorer window. <br> <strong>Good for:</strong> Maximizing viewing space for files and folders." },
+                ]
+            },
+            {
+                category: "Multiple Desktops",
+                shortcuts: [
+                    { keys: "Windows key + Tab", description: "Opens Task View, showing all open windows and virtual desktops. <br> <strong>Good for:</strong> Managing and switching between your active tasks and desktops." },
+                    { keys: "Windows key + Ctrl + D", description: "Creates a new virtual desktop. <br> <strong>Good for:</strong> Separating your work by project or task, creating a cleaner workspace." },
+                    { keys: "Windows key + Ctrl + Right arrow", description: "Switches to the virtual desktop on the right. <br> <strong>Good for:</strong> Quickly moving between your different workspaces." },
+                    { keys: "Windows key + Ctrl + Left arrow", description: "Switches to the virtual desktop on the left. <br> <strong>Good for:</strong> Quickly moving between your different workspaces." },
+                    { keys: "Windows key + Ctrl + F4", description: "Closes the current virtual desktop. Any open windows on that desktop will move to the next active desktop. <br> <strong>Good for:</strong> Cleaning up your virtual desktops when a task is complete." },
+                ]
+            },
+            {
+                category: "Settings App",
+                shortcuts: [
+                    { keys: "Windows key + I", description: "Opens the Settings app, your central hub for configuring Windows. <br> <strong>Good for:</strong> Accessing all system settings." },
+                    { keys: "Backspace", description: "Navigates back to the previous page within the Settings app. <br> <strong>Good for:</strong> Easily moving through different setting categories." },
+                ]
+            },
+            {
+                category: "Accessibility",
+                shortcuts: [
+                    { keys: "Windows key + Plus sign (+)", description: "Opens the Magnifier tool, which enlarges parts of your screen. <br> <strong>Good for:</strong> Users with visual impairments or when needing to see fine details." },
+                    { keys: "Windows key + Esc", description: "Closes the Magnifier tool. <br> <strong>Good for:</strong> Quickly turning off screen magnification." },
+                    { keys: "Windows key + Ctrl + O", description: "Opens the On-Screen Keyboard, allowing you to type using your mouse or a touch screen. <br> <strong>Good for:</strong> Touch-enabled devices or when a physical keyboard is unavailable." },
+                    { keys: "Windows key + U", description: "Opens the Accessibility settings, where you can configure options like Narrator, Magnifier, High Contrast, and more. <br> <strong>Good for:</strong> Customizing Windows for various accessibility needs." },
+                    { keys: "Windows key + Ctrl + Enter", description: "Toggles the Narrator screen reader on or off, which reads aloud text and elements on the screen. <br> <strong>Good for:</strong> Users with visual impairments." },
+                    { keys: "Right Shift for eight seconds", description: "Turns Filter Keys on or off, which ignores brief or repeated keystrokes. <br> <strong>Good for:</strong> Users with tremors or who accidentally press keys." },
+                    { keys: "Num Lock for five seconds", description: "Turns Toggle Keys on or off, which plays a sound when Caps Lock, Num Lock, or Scroll Lock are pressed. <br> <strong>Good for:</strong> Providing audio feedback for lock keys." },
+                    { keys: "Shift + Ctrl + Alt + B", description: "Restarts the graphics driver. This can fix display issues without restarting your computer. <br> <strong>Good for:</strong> Troubleshooting screen flickering or display problems." },
+                ]
+            },
+            {
+                category: "Command Prompt",
+                shortcuts: [
+                    { keys: "Ctrl + C", description: "Copies the selected text within the Command Prompt window. <br> <strong>Good for:</strong> Copying command output or file paths." },
+                    { keys: "Ctrl + V", description: "Pastes text from the clipboard into the Command Prompt window. <br> <strong>Good for:</strong> Quickly entering commands or paths." },
+                    { keys: "Ctrl + M", description: "Enters Mark mode in Command Prompt, allowing you to select text using the mouse. <br> <strong>Good for:</strong> Selecting and copying specific portions of text from the console." },
+                    { keys: "Alt + Enter", description: "Toggles the Command Prompt window between full-screen and windowed mode. <br> <strong>Good for:</strong> Maximizing visibility for long command outputs." },
+                    { keys: "Up/Down arrow", description: "Scrolls through your previously entered commands in the Command Prompt history. <br> <strong>Good for:</strong> Re-executing or modifying past commands." },
+                ]
+            },
+            {
+                category: "Dialog Boxes",
+                shortcuts: [
+                    { keys: "Tab", description: "Moves focus forward to the next interactive element (button, text field, checkbox) within a dialog box. <br> <strong>Good for:</strong> Navigating forms and options without using a mouse." },
+                    { keys: "Shift + Tab", description: "Moves focus backward to the previous interactive element within a dialog box. <br> <strong>Good for:</strong> Navigating forms and options in reverse." },
+                    { keys: "Enter", description: "Activates the currently focused button or performs the default command in a dialog box. <br> <strong>Good for:</strong> Confirming selections or actions." },
+                    { keys: "Esc", description: "Cancels the current task or closes the dialog box without saving changes. <br> <strong>Good for:</strong> Quickly dismissing pop-ups or undoing an action." },
+                    { keys: "Alt + Underlined letter", description: "Activates the command or option associated with the underlined letter in a dialog box. <br> <strong>Good for:</strong> Directly selecting options using keyboard shortcuts." },
+                ]
+            },
+            {
+                category: "Taskbar",
+                shortcuts: [
+                    { keys: "Windows key + T", description: "Cycles through the apps pinned to your taskbar, showing a preview of each. <br> <strong>Good for:</strong> Quickly previewing and switching between open apps on the taskbar." },
+                    { keys: "Windows key + B", description: "Sets focus to the first icon in the Taskbar corner overflow (system tray), allowing you to navigate with arrow keys. <br> <strong>Good for:</strong> Accessing background app icons and system functions." },
+                    { keys: "Windows key + Number (1-9)", description: "Opens the application pinned to the taskbar at the position corresponding to the number. <br> <strong>Good for:</strong> Quickly launching your most used apps." },
+                    { keys: "Windows key + Shift + Number (1-9)", description: "Opens a new instance of the application pinned to the taskbar at the specified position. <br> <strong>Good for:</strong> Opening multiple windows of the same app (e.g., two File Explorer windows)." },
+                    { keys: "Windows key + Ctrl + Number (1-9)", description: "Switches to the last active window of the application pinned to the taskbar at the specified position. <br> <strong>Good for:</strong> Quickly jumping to a specific app's window when multiple instances are open." },
+                ]
+            }
+        ];
+
+        // Get the container element
+        const shortcutsContainer = document.getElementById('shortcuts-container');
+
+        // Function to render shortcuts
+        function renderShortcuts() {
+            shortcutsData.forEach((categoryData, index) => {
+                // Create category section
+                const categorySection = document.createElement('div');
+                categorySection.className = 'mb-6';
+
+                // Create category header
+                const categoryHeader = document.createElement('div');
+                categoryHeader.className = 'category-header bg-blue-600 text-white p-4 rounded-t-xl text-lg sm:text-xl font-semibold shadow-md hover:bg-blue-700 transition duration-200 ease-in-out';
+                categoryHeader.innerHTML = `
+                    <span>${categoryData.category}</span>
+                    <svg class="arrow-icon w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                `;
+                categorySection.appendChild(categoryHeader);
+
+                // Create category content wrapper
+                const categoryContent = document.createElement('div');
+                categoryContent.className = 'category-content bg-gray-50 rounded-b-xl overflow-hidden';
+                if (index === 0) { // Expand the first category by default
+                    categoryContent.classList.add('expanded');
+                    categoryHeader.querySelector('.arrow-icon').classList.add('rotated');
                 }
-              };
-            } else {
-              // It's an array of primitive types
-              typeValue = {
-                type: "array",
-                items: typeMapping[arrayItemType.toLowerCase()] || "string" // Map the item type
-              };
-            }
 
-            if (isOptional) {
-              field = {
-                default: [], // Default for optional arrays is an empty array
-                name: fieldName,
-                type: ["null", typeValue] // Optional array also includes null in its type
-              };
-            } else {
-              field = {
-                name: fieldName,
-                type: typeValue
-              };
-            }
-          } else {
-            // Handle non-array, non-object (primitive) types
-            const baseAvroType = typeMapping[tsType.toLowerCase()] || "string"; // Default to 'string' if unknown
-            if (isOptional) {
-              field = {
-                default: null, // Placed first as requested
-                name: fieldName,
-                type: ["null", baseAvroType]
-              };
-            } else {
-              field = {
-                name: fieldName,
-                type: baseAvroType
-              };
-            }
-          }
+                // Create grid for shortcuts
+                const shortcutsGrid = document.createElement('div');
+                shortcutsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 p-4';
 
-          confluentSchema.fields.push(field);
-        });
+                categoryData.shortcuts.forEach(shortcut => {
+                    const shortcutCard = document.createElement('div');
+                    shortcutCard.className = 'shortcut-card p-4 border border-gray-200 rounded-xl flex flex-col justify-between';
 
-        return confluentSchema;
-      }
+                    // Process the keys string to replace text with icons
+                    let processedKeys = shortcut.keys;
+                    // Replace " + " with a separator for display
+                    processedKeys = processedKeys.replace(/ \+ /g, '<span class="text-gray-400 mx-1">+</span>');
 
-      // Get elements from the DOM
-      const typescriptInput = document.getElementById("typescriptInput");
-      const convertButton = document.getElementById("convertButton");
-      const outputSchema = document.getElementById("outputSchema");
+                    // Replace specific key names with their SVG representations
+                    processedKeys = processedKeys.replace(/Windows key/g, createKeyIcon('Windows key'));
+                    processedKeys = processedKeys.replace(/Alt/g, createKeyIcon('Alt'));
+                    processedKeys = processedKeys.replace(/Ctrl/g, createKeyIcon('Ctrl'));
+                    processedKeys = processedKeys.replace(/Shift/g, createKeyIcon('Shift'));
+                    processedKeys = processedKeys.replace(/Enter/g, createKeyIcon('Enter'));
+                    processedKeys = processedKeys.replace(/Tab/g, createKeyIcon('Tab'));
+                    processedKeys = processedKeys.replace(/Esc/g, createKeyIcon('Esc'));
+                    processedKeys = processedKeys.replace(/Backspace/g, createKeyIcon('Backspace'));
+                    processedKeys = processedKeys.replace(/Home/g, createKeyIcon('Home'));
+                    processedKeys = processedKeys.replace(/End/g, createKeyIcon('End'));
+                    processedKeys = processedKeys.replace(/Print Screen \(PrtScn\)/g, createKeyIcon('Print Screen (PrtScn)'));
+                    processedKeys = processedKeys.replace(/F2/g, createKeyIcon('F2'));
+                    processedKeys = processedKeys.replace(/F5/g, createKeyIcon('F5'));
+                    processedKeys = processedKeys.replace(/F11/g, createKeyIcon('F11'));
+                    processedKeys = processedKeys.replace(/Plus sign \(\+\)/g, createKeyIcon('Plus sign (+)'));
+                    processedKeys = processedKeys.replace(/Left arrow/g, createKeyIcon('Left arrow'));
+                    processedKeys = processedKeys.replace(/Right arrow/g, createKeyIcon('Right arrow'));
+                    processedKeys = processedKeys.replace(/Up arrow/g, createKeyIcon('Up arrow'));
+                    processedKeys = processedKeys.replace(/Down arrow/g, createKeyIcon('Down arrow'));
+                    processedKeys = processedKeys.replace(/Num Lock/g, createKeyIcon('Num Lock'));
+                    processedKeys = processedKeys.replace(/Del/g, createKeyIcon('Del'));
 
-      // Add event listener to the convert button
-      convertButton.addEventListener("click", () => {
-        const inputString = typescriptInput.value;
-        try {
-          const schema = convertTypescriptToConfluentSchema(inputString);
-          // Display the JSON schema in a preformatted block
-          outputSchema.textContent = JSON.stringify(schema, null, 2);
-        } catch (error) {
-          // Display error message if conversion fails
-          outputSchema.textContent = `Error: ${error.message}\n\nPlease check your TypeScript input format.`;
-          console.error("Conversion error:", error);
+
+                    shortcutCard.innerHTML = `
+                        <p class="text-blue-600 font-bold text-lg mb-2 flex flex-wrap items-center">${processedKeys}</p>
+                        <p class="text-gray-700 text-sm">${shortcut.description}</p>
+                    `;
+                    shortcutsGrid.appendChild(shortcutCard);
+                });
+
+                categoryContent.appendChild(shortcutsGrid);
+                categorySection.appendChild(categoryContent);
+                shortcutsContainer.appendChild(categorySection);
+
+                // Add click event listener to header for toggling
+                categoryHeader.addEventListener('click', () => {
+                    categoryContent.classList.toggle('expanded');
+                    categoryHeader.querySelector('.arrow-icon').classList.toggle('rotated');
+                });
+            });
         }
-      });
 
-      // Initialize with an example when the page loads
-      document.addEventListener("DOMContentLoaded", () => {
-        typescriptInput.value = `{
-  id: string;
-  name: string;
-  age?: number;
-  isActive?: boolean;
-  email?: string;
-  images?: string[];
-  tags: string[];
-  customer?: {
-    phone: string;
-    address: string;
-    contactMethods?: string[];
-  };
-  order: {
-    orderId: string;
-    total: number;
-    items?: {
-      productId: string;
-      quantity: number;
-    }[];
-  };
-}`;
-        convertButton.click(); // Automatically convert the example
-      });
+        // Call the render function when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', renderShortcuts);
     </script>
-  </body>
+</body>
 </html>
