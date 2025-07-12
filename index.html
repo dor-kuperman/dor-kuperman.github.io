@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>הוראות הגעה למשרדי זאפ</title>
+    <title>הוראות הגעה למשרדי זאפ - עם צ'קבוקסים</title>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -42,7 +42,7 @@
         ol {
             list-style: none; /* Remove default numbering */
             padding: 0;
-            counter-reset: step-counter; /* Initialize a counter */
+            /* counter-reset: step-counter; Removed as checkboxes take over visual numbering */
         }
         ol li {
             background: #e9f5ff;
@@ -51,37 +51,31 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             position: relative;
-            padding-right: 60px; /* Space for custom number */
+            display: flex; /* Use flexbox for alignment */
+            align-items: center; /* Vertically center checkbox and text */
+            padding-left: 20px; /* Space from right for checkbox */
         }
-        ol li::before {
-            counter-increment: step-counter; /* Increment the counter for each list item */
-            content: counter(step-counter); /* Display the counter value */
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: #3498db;
-            color: white;
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
+        ol li label {
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.1em;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            width: 100%; /* Make label clickable across the full item width */
+        }
+        ol li input[type="checkbox"] {
+            /* Position the checkbox to the right in RTL layout */
+            order: 1; /* Puts checkbox after text visually in LTR, so before in RTL */
+            margin-right: 15px; /* Space between checkbox and text */
+            width: 20px;
+            height: 20px;
+            accent-color: #3498db; /* Custom color for checkbox */
+        }
+        ol li .step-text {
+            order: 0; /* Puts text before checkbox visually in LTR, so after in RTL */
+            flex-grow: 1; /* Allows text to take up available space */
         }
         .highlight {
             font-weight: 700;
             color: #e74c3c;
-        }
-        .note {
-            font-style: italic;
-            color: #555;
-            margin-top: 10px;
-            border-top: 1px dashed #ccc;
-            padding-top: 10px;
         }
         a {
             color: #3498db;
@@ -99,24 +93,74 @@
 
         <h2>הכנה מקדימה</h2>
         <ol>
-            <li>להכין הוראות הגעה בגוגל מאפס מהרכבת הקלה עד למשרדים של זאפ.</li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">להכין הוראות הגעה בגוגל מאפס מהרכבת הקלה עד למשרדים של זאפ.</span>
+                </label>
+            </li>
         </ol>
 
         <h2>מסלול כמו ג'יוג'יטסו (רכבת ישראל)</h2>
         <ol>
-            <li>לצאת <span class="highlight">20 דקות לפני</span> הרכבת שיוצאת מכפר סבא נורדאו.</li>
-            <li>לקחת את הקו לפתח תקווה.</li>
-            <li>לרדת ב<span class="highlight">קריית אריה</span>.</li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">לצאת <span class="highlight">20 דקות לפני</span> הרכבת שיוצאת מכפר סבא נורדאו.</span>
+                </label>
+            </li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">לקחת את הקו לפתח תקווה.</span>
+                </label>
+            </li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">לרדת ב<span class="highlight">קריית אריה</span>.</span>
+                </label>
+            </li>
         </ol>
 
         <h2>מסלול חדש! (רכבת קלה)</h2>
         <ol>
-            <li>לעלות לרכבת הקלה.</li>
-            <li>לעלות על הרכבת <span class="highlight">הקלה</span> הראשונה שנמצאת ברציף.</li>
-            <li>לרדת ב<span class="highlight">תחנת אהרונוביץ'</span>. <span class="highlight">2 תחנות בלבד!!!!</span> קריית אריה => גשר אם המושבות => אהרונוביץ'.</li>
-            <li>מולך תהיה פלטפורמה נוספת של רכבת קלה, כמו שני כיוונים של אוטובוס על אותו רחוב. את תביני. את לוקחת קו של <span class="highlight">התחנה המרכזית</span> ולא של <span class="highlight">קריית אריה</span>.</li>
-            <li>לקחת קו רכבת קלה של התחנה המרכזית.</li>
-            <li>לפתוח את <a href="https://maps.app.goo.gl/jqpASUP2SnkkjfXe6" target="_blank">הוראות ההגעה בגוגל מאפס</a> שהכנת מראש.</li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">לעלות לרכבת הקלה.</span>
+                </label>
+            </li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">לעלות על הרכבת <span class="highlight">הקלה</span> הראשונה שנמצאת ברציף.</span>
+                </label>
+            </li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">לרדת ב<span class="highlight">תחנת אהרונוביץ'</span>. <span class="highlight">2 תחנות בלבד!!!!</span> קריית אריה => גשר אם המושבות => אהרונוביץ'.</span>
+                </label>
+            </li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">מולך תהיה פלטפורמה נוספת של רכבת קלה, כמו שני כיוונים של אוטובוס על אותו רחוב. את תביני. את לוקחת קו של <span class="highlight">התחנה המרכזית</span> ולא של <span class="highlight">קריית אריה</span>.</span>
+                </label>
+            </li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">לקחת קו רכבת קלה של התחנה המרכזית.</span>
+                </label>
+            </li>
+            <li>
+                <label>
+                    <input type="checkbox">
+                    <span class="step-text">לפתוח את <a href="https://maps.app.goo.gl/jqpASUP2SnkkjfXe6" target="_blank">הוראות ההגעה בגוגל מאפס</a> שהכנת מראש.</span>
+                </label>
+            </li>
         </ol>
     </div>
 </body>
