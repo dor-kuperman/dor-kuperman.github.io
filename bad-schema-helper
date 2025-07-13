@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>TypeScript to Avro Schema Converter</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(120deg, #4f8cff 0%, #6ee7b7 100%);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+      .header {
+        background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+        color: #fff;
+        padding: 32px 0 18px 0;
+        text-align: center;
+        letter-spacing: 1px;
+        box-shadow: 0 2px 12px #0002;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 32px auto;
+        background: rgba(255, 255, 255, 0.98);
+        border-radius: 14px;
+        box-shadow: 0 4px 24px #0002;
+        padding: 32px 32px 24px 32px;
+      }
+      .flex-row {
+        display: flex;
+        gap: 32px;
+        align-items: flex-start;
+        margin-top: 18px;
+        margin-bottom: 12px;
+      }
+      .card {
+        flex: 1 1 0;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px #0001;
+        padding: 18px 18px 12px 18px;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .label {
+        font-weight: 600;
+        color: #2563eb;
+        margin-bottom: 8px;
+        letter-spacing: 0.5px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 260px;
+        font-family: "Fira Mono", monospace;
+        font-size: 15px;
+        padding: 12px;
+        border-radius: 6px;
+        border: 1.5px solid #bcd;
+        background: #f8fbff;
+        resize: vertical;
+        margin-bottom: 10px;
+        transition: border 0.2s;
+      }
+      textarea:focus {
+        border: 1.5px solid #38bdf8;
+        outline: none;
+        background: #f0faff;
+      }
+      pre {
+        background: #181f2a;
+        color: #e2eaff;
+        padding: 16px;
+        border-radius: 7px;
+        overflow-x: auto;
+        font-size: 15px;
+        min-height: 260px;
+        margin: 0 0 10px 0;
+        font-family: "Fira Mono", monospace;
+        box-shadow: 0 1px 4px #0001;
+      }
+      .btn-row {
+        margin-top: 8px;
+        display: flex;
+        gap: 10px;
+      }
+      button {
+        background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 18px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 1px 4px #0001;
+        transition: background 0.2s, transform 0.1s;
+      }
+      button:active {
+        background: linear-gradient(90deg, #1e40af 0%, #0ea5e9 100%);
+        transform: scale(0.97);
+      }
+      .error {
+        color: #e11d48;
+        margin-top: 8px;
+        font-weight: 500;
+        min-height: 22px;
+      }
+      .footer {
+        margin-top: 36px;
+        color: #2563eb;
+        font-size: 14px;
+        text-align: center;
+        letter-spacing: 0.2px;
+      }
+      .footer a {
+        color: #38bdf8;
+        text-decoration: underline;
+        font-weight: 500;
+      }
+      @media (max-width: 900px) {
+        .flex-row {
+          flex-direction: column;
+          gap: 0;
+        }
+        .container {
+          padding: 12px 4vw 18px 4vw;
+        }
+        .card {
+          margin-bottom: 18px;
+        }
+        pre,
+        textarea {
+          font-size: 13px;
+          min-height: 180px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1 style="margin: 0; font-size: 2.1em">
+        TypeScript to Avro Schema Converter
+      </h1>
+      <div style="font-size: 1.1em; opacity: 0.93; margin-top: 7px">
+        Instantly convert a TypeScript <b>type/interface body</b> to an Avro
+        schema.
+      </div>
+    </div>
+    <div class="container">
+      <div class="flex-row">
+        <div class="card">
+          <div class="label">
+            TypeScript <span style="font-weight: 400">(body only)</span>
+          </div>
+          <textarea
+            id="ts-input"
+            spellcheck="false"
+            placeholder="e.g.&#10;street: string;&#10;city: string;&#10;zipCode?: string;"
+          ></textarea>
+          <div class="btn-row">
+            <button id="generate-btn">Generate Schema</button>
+          </div>
+          <div class="error" id="error-msg"></div>
+        </div>
+        <div class="card">
+          <div class="label">Generated Avro Schema</div>
+          <pre id="avro-output">{ }</pre>
+          <div class="btn-row">
+            <button id="copy-btn" style="display: none">
+              Copy to Clipboard
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        TypeScript → Avro Schema Converter &middot;
+        <a href="https://avro.apache.org/docs/current/spec.html" target="_blank"
+          >Avro Spec</a
+        >
+      </div>
+    </div>
+    <script>
+      function tsToAvroSchema(tsBody, opts = {}) {
+        const namespace = opts.namespace || "com.example";
+        const topLevelName = opts.name || "MyGeneratedSchema";
+        let inlineTypeId = 1;
+
+        function parseType(typeStr) {
+          typeStr = typeStr.trim();
+          if (/^\{[\s\S]*\}$/.test(typeStr)) {
+            return { kind: "object", body: typeStr.slice(1, -1).trim() };
+          }
+          let arrMatch = typeStr.match(/^(.+)\[\]$/);
+          if (arrMatch) {
+            return { kind: "array", elementType: parseType(arrMatch[1]) };
+          }
+          let arrMatch2 = typeStr.match(/^Array<(.+)>$/);
+          if (arrMatch2) {
+            return { kind: "array", elementType: parseType(arrMatch2[1]) };
+          }
+          if (typeStr.includes("|")) {
+            return {
+              kind: "union",
+              types: typeStr.split("|").map((s) => parseType(s.trim())),
+            };
+          }
+          if (/^(['"]).*\1$/.test(typeStr)) {
+            return { kind: "string-literal", value: typeStr.slice(1, -1) };
+          }
+          if (
+            ["string", "number", "boolean", "null", "int", "long"].includes(
+              typeStr
+            )
+          ) {
+            return { kind: "primitive", type: typeStr };
+          }
+          return { kind: "reference", type: typeStr };
+        }
+
+        // --- FIXED parseFields ---
+        function parseFields(body) {
+          let fields = [];
+          let buf = "",
+            depth = 0;
+          for (let i = 0; i < body.length; ++i) {
+            let c = body[i];
+            if (c === "{") depth++;
+            if (c === "}") depth--;
+            if (c === ";" && depth === 0) {
+              if (buf.trim()) fields.push(buf.trim());
+              buf = "";
+            } else {
+              buf += c;
+            }
+          }
+          if (buf.trim()) fields.push(buf.trim());
+          return fields
+            .map((line) => {
+              let m = /^([A-Za-z0-9_]+)\s*(\??):\s*([\s\S]+)$/.exec(line);
+              if (!m) return null;
+              let [, name, opt, typeStr] = m;
+              return {
+                name,
+                optional: opt === "?",
+                type: parseType(typeStr),
+              };
+            })
+            .filter(Boolean);
+        }
+
+        function convertType(tsType, parentName) {
+          if (tsType.kind === "union") {
+            let nullish = tsType.types.find(
+              (t) =>
+                t.kind === "primitive" &&
+                (t.type === "null" || t.type === "undefined")
+            );
+            let nonNulls = tsType.types.filter(
+              (t) =>
+                !(
+                  t.kind === "primitive" &&
+                  (t.type === "null" || t.type === "undefined")
+                )
+            );
+            if (nullish) {
+              if (nonNulls.length === 1) {
+                let avroType = convertType(nonNulls[0], parentName);
+                if (typeof avroType === "object" && avroType.type === "array") {
+                  return { type: ["null", avroType], default: [] };
+                }
+                return { type: ["null", avroType], default: null };
+              } else {
+                let avroTypes = [
+                  "null",
+                  ...nonNulls.map((t) => convertType(t, parentName)),
+                ];
+                return { type: avroTypes, default: null };
+              }
+            }
+            if (tsType.types.every((t) => t.kind === "string-literal")) {
+              return {
+                type: "enum",
+                name: parentName + "_Enum",
+                symbols: tsType.types.map((t) => t.value),
+              };
+            }
+            return {
+              type: tsType.types.map((t) => convertType(t, parentName)),
+            };
+          }
+          if (tsType.kind === "array") {
+            let itemsType = convertType(
+              tsType.elementType,
+              parentName + "_item"
+            );
+            return { type: "array", items: itemsType };
+          }
+          if (tsType.kind === "object") {
+            let name = parentName || "InlineType" + inlineTypeId++;
+            let fields = [];
+            for (let field of parseFields(tsType.body)) {
+              let avroField = { name: field.name };
+              let avroType = convertType(field.type, name + "_" + field.name);
+              if (
+                avroType &&
+                avroType.type &&
+                Array.isArray(avroType.type) &&
+                avroType.type[0] === "null"
+              ) {
+                avroField.type = avroType.type;
+                if (
+                  typeof avroType.type[1] === "object" &&
+                  avroType.type[1].type === "array"
+                ) {
+                  avroField.default = [];
+                } else {
+                  avroField.default = null;
+                }
+              } else if (
+                avroType &&
+                avroType.type &&
+                avroType.type === "array" &&
+                field.optional
+              ) {
+                avroField.type = ["null", avroType];
+                avroField.default = [];
+              } else {
+                avroField.type = avroType;
+              }
+              fields.push(avroField);
+            }
+            return { type: "record", name, namespace, fields };
+          }
+          if (tsType.kind === "string-literal") {
+            return "string";
+          }
+          if (tsType.kind === "primitive") {
+            if (tsType.type === "string") return "string";
+            if (tsType.type === "boolean") return "boolean";
+            if (tsType.type === "null") return "null";
+            if (tsType.type === "number") return "double";
+            if (tsType.type === "int") return "int";
+            if (tsType.type === "long") return "long";
+            return "string";
+          }
+          if (tsType.kind === "reference") {
+            return "string";
+          }
+          return "string";
+        }
+
+        let rootType = { kind: "object", body: tsBody.trim() };
+        let avro = convertType(rootType, topLevelName);
+        avro.name = topLevelName;
+        avro.namespace = namespace;
+        return avro;
+      }
+
+      // --- UI Integration ---
+      const tsInput = document.getElementById("ts-input");
+      const generateBtn = document.getElementById("generate-btn");
+      const avroOutput = document.getElementById("avro-output");
+      const errorMsg = document.getElementById("error-msg");
+      const copyBtn = document.getElementById("copy-btn");
+
+      generateBtn.onclick = function () {
+        errorMsg.textContent = "";
+        avroOutput.textContent = "";
+        copyBtn.style.display = "none";
+        try {
+          const schema = tsToAvroSchema(tsInput.value);
+          avroOutput.textContent = JSON.stringify(schema, null, 2);
+          copyBtn.style.display = "";
+        } catch (e) {
+          errorMsg.textContent = e.message;
+        }
+      };
+
+      copyBtn.onclick = function () {
+        navigator.clipboard.writeText(avroOutput.textContent);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => (copyBtn.textContent = "Copy to Clipboard"), 1200);
+      };
+    </script>
+  </body>
+</html>
