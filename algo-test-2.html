@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Savings Projection Calculator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f4f4f9;
+        color: #333;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h2,
+      h3 {
+        color: #0056b3;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 5px;
+        margin-top: 20px;
+      }
+      .input-group {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .channel-input {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 10px;
+        background: #fafafa;
+        border-radius: 4px;
+      }
+      .channel-input label {
+        font-size: 0.85em;
+        font-weight: bold;
+      }
+      input[type="number"],
+      input[type="text"] {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      #add-channel {
+        background-color: #28a745;
+      }
+      #add-channel:hover {
+        background-color: #1e7e34;
+      }
+      .remove-channel {
+        background-color: #dc3545;
+        padding: 6px 10px;
+      }
+      .remove-channel:hover {
+        background-color: #bd2130;
+      }
+      #result-output {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #007bff;
+        margin-top: 15px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        font-size: 0.9em;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: right;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      .total-row {
+        font-weight: bold;
+        background-color: #e0f7fa !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Savings Goal Calculator</h2>
+      <div class="input-group">
+        <label for="goal-value">Goal Value (Shekels):</label>
+        <input
+          type="number"
+          id="goal-value"
+          value="1000000"
+          min="1"
+          required
+          onchange="saveInputs()"
+        />
+      </div>
+      <div class="input-group">
+        <label for="initial-total-value"
+          >Non-Channel Starting Value (Shekels):</label
+        >
+        <input
+          type="number"
+          id="initial-total-value"
+          value="30000"
+          min="0"
+          required
+          onchange="saveInputs()"
+        />
+      </div>
+
+      <div class="input-group" id="channels-container">
+        <h3>Savings Channels</h3>
+        <div class="channel-header channel-input">
+          <label>Name</label>
+          <label>Initial Value</label>
+          <label>Monthly Rate (%)</label>
+          <label>Monthly Addition</label>
+          <div></div>
+        </div>
+      </div>
+
+      <button id="add-channel">Add Savings Channel</button>
+      <button onclick="calculateAndDisplay()">Calculate Months to Goal</button>
+
+      <div id="result-output"></div>
+
+      <div id="table-output">
+        <h3>Monthly Progress History</h3>
+      </div>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "savingsCalculatorData";
+
+      /**
+       * Core Algorithm: Calculates the time to reach a financial goal, tracking monthly progress.
+       */
+      function calculateMonthsToGoalWithProgress(
+        channels,
+        goalValue,
+        initialTotalStartingValue
+      ) {
+        let totalCurrentValue = initialTotalStartingValue;
+        let months = 0;
+        const progressHistory = [];
+
+        // 1. Initialize Tracker and Initial Value
+        const channelTracker = channels.map((c, index) => ({
+          name: c.name || `Channel ${index + 1}`,
+          monthlyInterestRate: c.monthlyInterestRate,
+          monthlyAddedInvestment: c.monthlyAddedInvestment,
+          currentValue: c.initialStartingValue,
+        }));
+
+        channelTracker.forEach((c) => {
+          totalCurrentValue += c.currentValue;
+        });
+
+        // Capture initial state (Month 0).
+        const initialSnapshot = {
+          month: 0,
+          totalValue: totalCurrentValue,
+        };
+        channelTracker.forEach((c) => {
+          initialSnapshot[c.name] = c.currentValue;
+        });
+        progressHistory.push(initialSnapshot);
+
+        // 2. Begin the monthly simulation loop.
+        while (totalCurrentValue < goalValue) {
+          months++;
+          let monthlyTotalGain = 0;
+
+          channelTracker.forEach((channel) => {
+            const rateDecimal = channel.monthlyInterestRate / 100;
+            const interestGain = channel.currentValue * rateDecimal;
+            const monthlyChannelGain =
+              interestGain + channel.monthlyAddedInvestment;
+
+            channel.currentValue += monthlyChannelGain;
+            monthlyTotalGain += monthlyChannelGain;
+          });
+
+          totalCurrentValue += monthlyTotalGain;
+
+          // Capture the state at the end of the current month.
+          const monthlySnapshot = {
+            month: months,
+            totalValue: totalCurrentValue,
+          };
+
+          // FIX: Use 'c.currentValue' to capture the specific channel's updated value
+          channelTracker.forEach((c) => {
+            monthlySnapshot[c.name] = c.currentValue;
+          });
+          progressHistory.push(monthlySnapshot);
+
+          if (months > 500) {
+            return { months: Infinity, progressHistory: progressHistory };
+          }
+        }
+
+        return { months: months, progressHistory: progressHistory };
+      }
+
+      // --- Local Storage Functions ---
+
+      /**
+       * Gathers all current form inputs and saves them to local storage.
+       */
+      function saveInputs() {
+        // 1. Static Inputs
+        const goalValue =
+          parseFloat(document.getElementById("goal-value").value) || 0;
+        const initialTotalStartingValue =
+          parseFloat(document.getElementById("initial-total-value").value) || 0;
+
+        // 2. Dynamic Channels
+        const channels = [];
+        const channelInputs = document.querySelectorAll(
+          ".channel-input:not(.channel-header)"
+        );
+
+        channelInputs.forEach((inputDiv) => {
+          const name = inputDiv.querySelector(".channel-name").value || "";
+          const initial =
+            parseFloat(
+              inputDiv.querySelector(".channel-initial-value").value
+            ) || 0;
+          const rate =
+            parseFloat(inputDiv.querySelector(".channel-rate").value) || 0;
+          const addition =
+            parseFloat(inputDiv.querySelector(".channel-addition").value) || 0;
+
+          channels.push({ name, initial, rate, addition });
+        });
+
+        const dataToSave = {
+          goalValue,
+          initialTotalStartingValue,
+          channels,
+        };
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        } catch (e) {
+          console.error("Local storage saving failed:", e);
+        }
+      }
+
+      /**
+       * Loads saved inputs from local storage and populates the form.
+       */
+      function loadInputs() {
+        let savedData;
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            savedData = JSON.parse(stored);
+          }
+        } catch (e) {
+          console.error("Local storage loading failed:", e);
+        }
+
+        const container = document.getElementById("channels-container");
+        // Clear any default channels before loading
+        document
+          .querySelectorAll(".channel-input:not(.channel-header)")
+          .forEach((el) => el.remove());
+
+        if (savedData) {
+          // Load Static Inputs
+          document.getElementById("goal-value").value = savedData.goalValue;
+          document.getElementById("initial-total-value").value =
+            savedData.initialTotalStartingValue;
+
+          // Load Channels
+          savedData.channels.forEach((c) => {
+            container.appendChild(
+              createChannelInput(c.name, c.initial, c.rate, c.addition)
+            );
+          });
+        } else {
+          // Fallback to example channels if no data is saved
+          const exampleChannels = [
+            { name: "Fund A (10%)", initial: 20000, rate: 10, add: 0 },
+            { name: "Fixed Deposit (10%)", initial: 42000, rate: 10, add: 0 },
+            { name: "S&P 500 (4%)", initial: 40000, rate: 4, add: 0 },
+          ];
+          exampleChannels.forEach((c) => {
+            container.appendChild(
+              createChannelInput(c.name, c.initial, c.rate, c.add)
+            );
+          });
+        }
+      }
+
+      // --- DOM Manipulation Functions ---
+
+      // Template for a new channel input group
+      function createChannelInput(
+        name = "",
+        initialValue = 0,
+        rate = 0,
+        monthlyAddition = 0
+      ) {
+        const div = document.createElement("div");
+        div.className = "channel-input";
+        // Added onchange handler to input fields for autosave
+        div.innerHTML = `
+            <input type="text" value="${name}" class="channel-name" placeholder="Name (e.g., S&P 500)" onchange="saveInputs()">
+            <input type="number" value="${initialValue}" class="channel-initial-value" min="0" placeholder="Initial Value" onchange="saveInputs()">
+            <input type="number" value="${rate}" class="channel-rate" min="0" placeholder="Monthly Rate (%)" onchange="saveInputs()">
+            <input type="number" value="${monthlyAddition}" class="channel-addition" min="0" placeholder="Monthly Addition" onchange="saveInputs()">
+            <button class="remove-channel">Remove</button>
+        `;
+
+        // Update remove channel logic to save data after removal
+        div.querySelector(".remove-channel").onclick = () => {
+          div.remove();
+          saveInputs();
+        };
+        return div;
+      }
+
+      // Adds a new channel input to the form
+      document.getElementById("add-channel").addEventListener("click", () => {
+        document
+          .getElementById("channels-container")
+          .appendChild(createChannelInput());
+        saveInputs(); // Save immediately after adding a new channel
+      });
+
+      // Replace initializeChannels with loadInputs on window load
+      window.onload = loadInputs;
+
+      // Main function to read data, calculate, and display results
+      function calculateAndDisplay() {
+        // 1. Read static inputs (and implicitly save them via onchange events)
+        const goalValue = parseFloat(
+          document.getElementById("goal-value").value
+        );
+        const initialTotalStartingValue = parseFloat(
+          document.getElementById("initial-total-value").value
+        );
+
+        // Check if the inputs have been saved correctly before proceeding
+        saveInputs();
+
+        if (
+          isNaN(goalValue) ||
+          isNaN(initialTotalStartingValue) ||
+          goalValue <= 0
+        ) {
+          document.getElementById("result-output").textContent =
+            "ERROR: Ensure Goal Value and Starting Values are valid numbers.";
+          return;
+        }
+
+        // 2. Read dynamic channel inputs (using the same logic as saveInputs)
+        const channels = [];
+        const channelInputs = document.querySelectorAll(
+          ".channel-input:not(.channel-header)"
+        );
+
+        channelInputs.forEach((inputDiv) => {
+          const name =
+            inputDiv.querySelector(".channel-name").value || "Unnamed Channel";
+          const initial =
+            parseFloat(
+              inputDiv.querySelector(".channel-initial-value").value
+            ) || 0;
+          const rate =
+            parseFloat(inputDiv.querySelector(".channel-rate").value) || 0;
+          const addition =
+            parseFloat(inputDiv.querySelector(".channel-addition").value) || 0;
+
+          channels.push({
+            name: name,
+            initialStartingValue: initial,
+            monthlyInterestRate: rate,
+            monthlyAddedInvestment: addition,
+          });
+        });
+
+        if (channels.length === 0) {
+          document.getElementById("result-output").textContent =
+            "ERROR: Add at least one savings channel.";
+          return;
+        }
+
+        // 3. Run Calculation
+        const result = calculateMonthsToGoalWithProgress(
+          channels,
+          goalValue,
+          initialTotalStartingValue
+        );
+
+        // 4. Display Results
+        const resultOutput = document.getElementById("result-output");
+        if (result.months === Infinity) {
+          resultOutput.innerHTML = `Goal not reached within the simulation limit (500 months). Check parameters.`;
+        } else {
+          resultOutput.innerHTML = `Time to Reach Goal: ${
+            result.months
+          } months, ${(result.months / 12).toFixed(
+            2
+          )} years (Target: ${goalValue.toLocaleString()}₪)`;
+        }
+
+        // 5. Generate and display table
+        displayProgressTable(result.progressHistory);
+      }
+
+      function displayProgressTable(history) {
+        const tableOutput = document.getElementById("table-output");
+        tableOutput.innerHTML = "<h3>Monthly Progress History</h3>";
+
+        if (history.length <= 1) return;
+
+        // Get headers from the first data object
+        const rawHeaders = Object.keys(history[0]);
+        const displayHeaders = rawHeaders.map((key) => {
+          if (key === "month") return "Month";
+          if (key === "totalValue") return "TOTAL VALUE (₪)";
+          return key; // Channel names
+        });
+
+        let tableHTML = "<table><thead><tr>";
+        displayHeaders.forEach((header) => {
+          tableHTML += `<th>${header}</th>`;
+        });
+        tableHTML += "</tr></thead><tbody>";
+
+        const totalMonths = history[history.length - 1].month;
+        const startGap = 2;
+        const endGap = 5;
+        let addedSeparator = false;
+
+        history.forEach((row, index) => {
+          const month = row.month;
+
+          const isDisplayed =
+            month === 0 || month === 1 || month >= totalMonths - endGap;
+
+          if (isDisplayed) {
+            if (month > startGap && !addedSeparator) {
+              tableHTML +=
+                '<tr><td colspan="' +
+                rawHeaders.length +
+                '" style="text-align: center; background-color: #f2f2f2;">...</td></tr>';
+              addedSeparator = true;
+            }
+
+            tableHTML += `<tr class="${
+              month === totalMonths ? "total-row" : ""
+            }">`;
+
+            rawHeaders.forEach((key) => {
+              let value = row[key];
+
+              if (key !== "month") {
+                value = value.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                });
+              }
+
+              tableHTML += `<td>${value}</td>`;
+            });
+            tableHTML += "</tr>";
+          }
+        });
+
+        tableHTML += "</tbody></table>";
+        tableOutput.innerHTML += tableHTML;
+      }
+    </script>
+  </body>
+</html>
