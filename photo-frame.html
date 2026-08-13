@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Digital Photo Frame</title>
+<style>
+  :root {
+    --fade: 1400ms;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  body.playing { cursor: none; }
+
+  /* ---------------- Stage: two alternating layers ---------------- */
+
+  #stage { position: fixed; inset: 0; background: #000; }
+
+  .layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity var(--fade) ease-in-out;
+    will-change: opacity;
+  }
+  .layer.visible { opacity: 1; }
+
+  /* Blurred backdrop fills the letterbox bars behind `contain` media. */
+  .layer > .bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(48px) brightness(0.45) saturate(1.25);
+    transform: scale(1.2);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .layer > .bg.on { opacity: 1; }
+
+  .layer > .media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    visibility: hidden;
+  }
+  .layer > .media.on { visibility: visible; }
+
+  /* ---------------- Ken Burns (images only) ---------------- */
+
+  .layer > img.media.kb { animation: kb0 var(--kb, 12s) linear both; }
+  .layer > img.media.kb.d1 { animation-name: kb1; }
+  .layer > img.media.kb.d2 { animation-name: kb2; }
+  .layer > img.media.kb.d3 { animation-name: kb3; }
+
+  @keyframes kb0 {
+    from { transform: scale(1.00) translate3d(0, 0, 0); }
+    to   { transform: scale(1.12) translate3d(-2%, -1.5%, 0); }
+  }
+  @keyframes kb1 {
+    from { transform: scale(1.12) translate3d(2%, 1.5%, 0); }
+    to   { transform: scale(1.00) translate3d(0, 0, 0); }
+  }
+  @keyframes kb2 {
+    from { transform: scale(1.00) translate3d(0, 0, 0); }
+    to   { transform: scale(1.13) translate3d(2.5%, -1.5%, 0); }
+  }
+  @keyframes kb3 {
+    from { transform: scale(1.10) translate3d(-2%, 1.5%, 0); }
+    to   { transform: scale(1.02) translate3d(1%, -1%, 0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .layer > img.media.kb { animation: none !important; }
+  }
+
+  /* ---------------- Setup ---------------- */
+
+  #setup {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    padding: 24px;
+    text-align: center;
+    color: #e8e8ea;
+    background: radial-gradient(ellipse at 50% 35%, #16181d 0%, #000 70%);
+  }
+  #setup[hidden] { display: none; }
+
+  #setup h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 300;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  #setup p { font-size: 15px; line-height: 1.6; color: #8b8d96; max-width: 44ch; }
+
+  .field { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #8b8d96; }
+  .field input {
+    width: 84px; padding: 10px 12px;
+    font: inherit; font-size: 15px; text-align: center;
+    color: #e8e8ea; background: #17181d;
+    border: 1px solid #2c2e36; border-radius: 8px;
+  }
+
+  #startBtn {
+    padding: 16px 44px;
+    font: inherit; font-size: 16px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: #0b0c0f; background: #e8e8ea;
+    border: 0; border-radius: 999px; cursor: pointer;
+    transition: transform 160ms ease, background 160ms ease;
+  }
+  #startBtn:hover { background: #fff; }
+  #startBtn:active { transform: scale(0.96); }
+
+  #picker { display: none; }
+
+  /* ---------------- Diagnostics ---------------- */
+
+  #status {
+    position: fixed;
+    left: 14px; top: 12px;
+    z-index: 30;
+    max-width: 60vw;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.62);
+    font: 12px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace;
+    white-space: pre-wrap;
+    pointer-events: none;
+  }
+  #status[hidden] { display: none; }
+
+  /* Fatal panel — the frame must never just sit black in silence. */
+  #fatal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+    padding: 8vw;
+    background: #0c0407;
+    color: #ffb4b4;
+    font: 14px/1.7 ui-monospace, "Cascadia Mono", Consolas, monospace;
+    overflow: auto;
+  }
+  #fatal[hidden] { display: none; }
+  #fatal h2 { font-size: 20px; font-weight: 600; color: #ff7b7b; }
+  #fatal .hint { color: #8b8d96; }
+
+  /* Fullscreen needs a user gesture all to itself -- hence a real button
+     rather than folding it into the folder-picker click. */
+  .btn-ghost {
+    padding: 13px 30px;
+    font: inherit; font-size: 15px;
+    letter-spacing: 0.06em;
+    color: #e8e8ea;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 160ms ease, transform 160ms ease;
+  }
+  .btn-ghost:hover { background: rgba(255, 255, 255, 0.14); }
+  .btn-ghost:active { transform: scale(0.96); }
+
+  .buttons { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+
+  /* The same fullscreen button, floating over the slideshow while windowed. */
+  #fsFloat {
+    position: fixed;
+    left: 50%; bottom: 40px;
+    transform: translateX(-50%);
+    z-index: 30;
+    background: rgba(18, 19, 24, 0.88);
+    animation: hintPulse 2.6s ease-in-out infinite;
+  }
+  #fsFloat[hidden] { display: none; }
+  #fsFloat:hover { transform: translateX(-50%); background: rgba(38, 40, 48, 0.95); }
+  #fsFloat:active { transform: translateX(-50%) scale(0.96); }
+
+  @keyframes hintPulse {
+    0%, 100% { opacity: 0.78; }
+    50%      { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #fsFloat { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="layer" id="layerA">
+    <img class="bg" alt="" aria-hidden="true">
+    <img class="media" alt="">
+    <video class="media" muted playsinline preload="auto"></video>
+  </div>
+  <div class="layer" id="layerB">
+    <img class="bg" alt="" aria-hidden="true">
+    <img class="media" alt="">
+    <video class="media" muted playsinline preload="auto"></video>
+  </div>
+</div>
+
+<div id="setup">
+  <h1>Photo Frame</h1>
+  <p>Pick a folder of photos and videos. They play shuffled, on repeat, and the screen won't sleep. Fullscreen is a separate button because browsers only allow one such action per tap.</p>
+  <label class="field">
+    Image duration
+    <input type="number" id="duration" min="1" max="600" step="1" value="10">
+    seconds
+  </label>
+  <div class="buttons">
+    <button id="startBtn" type="button">Choose Folder &amp; Start</button>
+    <button id="fsBtn" class="btn-ghost" type="button">⛶ Fullscreen</button>
+  </div>
+  <input type="file" id="picker" webkitdirectory directory multiple>
+</div>
+
+<div id="status" hidden></div>
+<button id="fsFloat" class="btn-ghost" type="button" hidden>⛶ Fullscreen</button>
+<div id="fatal" hidden></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const IMAGE_RE = /\.(jpe?g|png|webp|gif|avif|bmp)$/i;
+  const VIDEO_RE = /\.(mp4|webm|mov|m4v|ogv)$/i;
+  const FADE_MS = 1400;
+  const LOAD_TIMEOUT_MS = 15000;   // a file that won't load must not stall the frame
+  const VIDEO_MAX_MS = 30 * 60000; // hard ceiling so a broken `ended` can't hang forever
+  const MAX_CONSECUTIVE_FAILURES = 8;
+
+  const params = new URLSearchParams(location.search);
+  const QUIET = params.has('quiet');
+
+  const $ = (id) => document.getElementById(id);
+  const setupEl = $('setup');
+  const startBtn = $('startBtn');
+  const picker = $('picker');
+  const durInput = $('duration');
+  const statusEl = $('status');
+  const fatalEl = $('fatal');
+  const fsBtn = $('fsBtn');
+  const fsFloat = $('fsFloat');
+
+  const layers = [$('layerA'), $('layerB')].map((root) => ({
+    root,
+    bg: root.querySelector('.bg'),
+    img: root.querySelector('img.media'),
+    video: root.querySelector('video.media'),
+  }));
+
+  // ---------------- State ----------------
+  //
+  // `generation` is the re-entrancy fix. Every advance bumps it; any async
+  // callback (image load, video `ended`, dwell timer) that belongs to an older
+  // generation is stale and returns immediately. This removes the entire class
+  // of "callback fires after we already moved on" bugs without a mutex flag.
+
+  let playlist = [];
+  let cursor = 0;
+  let front = 1;              // index of the layer currently on screen
+  let dwellMs = 10000;
+  let generation = 0;
+  let running = false;
+  let timer = null;
+  let consecutiveFailures = 0;
+  const errors = [];
+
+  // Debug surface, also used by the automated verifier.
+  const dbg = window.__frame = {
+    get running() { return running; },
+    get total() { return playlist.length; },
+    index: -1,
+    name: '',
+    type: '',
+    state: 'idle',
+    shown: 0,        // how many items have actually been presented
+    errors,
+  };
+
+  function setState(state, extra) {
+    dbg.state = state;
+    render();
+    if (extra) console.log('[frame]', state, extra);
+  }
+
+  function render() {
+    if (QUIET || !running) { statusEl.hidden = true; return; }
+    statusEl.hidden = false;
+    statusEl.textContent =
+      `${dbg.index + 1}/${playlist.length}  ${dbg.type}  ${dbg.name}\n` +
+      `${dbg.state}` + (errors.length ? `  ·  ${errors.length} skipped` : '');
+  }
+
+  function fail(msg, err) {
+    const line = err ? `${msg}: ${err.message || err}` : msg;
+    errors.push(line);
+    console.error('[frame]', line);
+    render();
+  }
+
+  function fatal(title, detail) {
+    running = false;
+    clearTimeout(timer);
+    fatalEl.hidden = false;
+    fatalEl.innerHTML = '';
+    const h = document.createElement('h2');
+    h.textContent = title;
+    fatalEl.appendChild(h);
+    const d = document.createElement('div');
+    d.textContent = detail;
+    fatalEl.appendChild(d);
+    if (errors.length) {
+      const list = document.createElement('div');
+      list.textContent = errors.slice(-12).join('\n');
+      fatalEl.appendChild(list);
+    }
+    const hint = document.createElement('div');
+    hint.className = 'hint';
+    hint.textContent = 'Tap anywhere to return to setup.';
+    fatalEl.appendChild(hint);
+    console.error('[frame] FATAL', title, detail);
+  }
+
+  window.addEventListener('error', (e) => fail('window error', e.error || e.message));
+  window.addEventListener('unhandledrejection', (e) => fail('unhandled rejection', e.reason));
+
+  // ---------------- Playlist ----------------
+
+  function buildPlaylist(files) {
+    const out = [];
+    for (const file of files) {
+      if (file.name.startsWith('.')) continue;
+      const isVideo = VIDEO_RE.test(file.name) || file.type.startsWith('video/');
+      const isImage = IMAGE_RE.test(file.name) || file.type.startsWith('image/');
+      if (!isImage && !isVideo) continue;
+      out.push({
+        name: file.name,
+        type: isVideo ? 'video' : 'image',
+        url: URL.createObjectURL(file),
+      });
+    }
+    return out;
+  }
+
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ---------------- Preload ----------------
+  //
+  // Resolves only once the media is genuinely paintable. Rejects on error or
+  // timeout. Does nothing else -- no fading, no scheduling.
+
+  function withTimeout(promise, ms, label) {
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+      promise.then(
+        (v) => { clearTimeout(t); resolve(v); },
+        (e) => { clearTimeout(t); reject(e); }
+      );
+    });
+  }
+
+  function preload(layer, item) {
+    // Reset the layer's media elements before loading.
+    layer.img.classList.remove('on', 'kb', 'd1', 'd2', 'd3');
+    layer.video.classList.remove('on');
+    layer.bg.classList.remove('on');
+
+    if (item.type === 'image') {
+      return withTimeout(new Promise((resolve, reject) => {
+        const img = layer.img;
+        const ok = () => { off(); resolve(); };
+        const no = () => { off(); reject(new Error('decode failed')); };
+        const off = () => {
+          img.removeEventListener('load', ok);
+          img.removeEventListener('error', no);
+        };
+        img.addEventListener('load', ok);
+        img.addEventListener('error', no);
+        img.src = item.url;
+        // A cached/synchronous decode may already be complete.
+        if (img.complete && img.naturalWidth > 0) ok();
+      }), LOAD_TIMEOUT_MS, `image ${item.name}`);
+    }
+
+    return withTimeout(new Promise((resolve, reject) => {
+      const v = layer.video;
+      const ok = () => { off(); resolve(); };
+      const no = () => { off(); reject(new Error('video decode failed')); };
+      const off = () => {
+        v.removeEventListener('loadeddata', ok);
+        v.removeEventListener('error', no);
+      };
+      v.addEventListener('loadeddata', ok);
+      v.addEventListener('error', no);
+      v.muted = true;
+      v.src = item.url;
+      v.load();
+    }), LOAD_TIMEOUT_MS, `video ${item.name}`);
+  }
+
+  // ---------------- Present ----------------
+  //
+  // Pure, synchronous cross-fade. Called only after preload resolved, which is
+  // what guarantees there is never a blank frame mid-transition.
+
+  function present(layer, item, index) {
+    const outgoing = layers[front];
+
+    if (item.type === 'image') {
+      layer.bg.src = item.url;
+      layer.bg.classList.add('on');
+      layer.img.classList.add('on');
+      layer.img.style.setProperty('--kb', (dwellMs + FADE_MS * 2) + 'ms');
+      const dir = index % 4;
+      layer.img.classList.remove('d1', 'd2', 'd3');
+      if (dir) layer.img.classList.add('d' + dir);
+      void layer.img.offsetWidth; // restart the animation on a reused element
+      layer.img.classList.add('kb');
+    } else {
+      layer.video.classList.add('on');
+    }
+
+    layer.root.classList.add('visible');
+    outgoing.root.classList.remove('visible');
+    front = layers.indexOf(layer);
+    dbg.shown++;
+
+    // Retire the outgoing layer only after the fade has fully finished.
+    const gen = generation;
+    setTimeout(() => {
+      if (gen !== generation && !running) return;
+      if (layers[front] === outgoing) return; // it came back into use
+      try {
+        outgoing.video.pause();
+        outgoing.video.removeAttribute('src');
+        outgoing.video.load();
+      } catch (e) { /* teardown is best-effort */ }
+      outgoing.video.classList.remove('on');
+      outgoing.img.classList.remove('on', 'kb', 'd1', 'd2', 'd3');
+      outgoing.img.removeAttribute('src');
+      outgoing.bg.classList.remove('on');
+      outgoing.bg.removeAttribute('src');
+    }, FADE_MS + 80);
+  }
+
+  // ---------------- Schedule the next advance ----------------
+
+  function scheduleAdvance(layer, item) {
+    const gen = generation;
+    const next = () => { if (gen === generation) advance(); };
+
+    if (item.type === 'image') {
+      timer = setTimeout(next, dwellMs);
+      setState('showing image');
+      return;
+    }
+
+    const v = layer.video;
+    // Videos advance ONLY on `ended`. The image dwell never applies to them.
+    v.addEventListener('ended', next, { once: true });
+    v.addEventListener('error', () => {
+      if (gen !== generation) return;
+      fail(`playback error in ${item.name}`);
+      next();
+    }, { once: true });
+
+    // Ceiling, not a duration: only trips if `ended` never fires at all.
+    timer = setTimeout(() => {
+      if (gen !== generation) return;
+      fail(`${item.name} never fired 'ended'`);
+      next();
+    }, VIDEO_MAX_MS);
+
+    setState('playing video');
+
+    v.play().catch((err) => {
+      if (gen !== generation) return;
+      fail(`autoplay blocked for ${item.name}`, err);
+      next();
+    });
+  }
+
+  // ---------------- The loop ----------------
+
+  async function advance() {
+    if (!running) return;
+    const gen = ++generation;
+    clearTimeout(timer);
+    timer = null;
+
+    const back = layers[1 - front];
+
+    while (running && gen === generation) {
+      if (cursor >= playlist.length) { shuffle(playlist); cursor = 0; }
+      const index = cursor;
+      const item = playlist[cursor++];
+
+      dbg.index = index;
+      dbg.name = item.name;
+      dbg.type = item.type;
+      setState('loading');
+
+      try {
+        await preload(back, item);
+      } catch (err) {
+        fail(`skipped ${item.name}`, err);
+        consecutiveFailures++;
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          fatal('No media could be displayed',
+                `${consecutiveFailures} files in a row failed to load. The folder may contain formats this browser cannot decode.`);
+          return;
+        }
+        continue; // try the next file
+      }
+
+      if (!running || gen !== generation) return; // superseded while loading
+      consecutiveFailures = 0;
+      present(back, item, index);
+      scheduleAdvance(back, item);
+      return;
+    }
+  }
+
+  // ---------------- Wake lock ----------------
+
+  let wakeLock = null;
+
+  async function acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (err) {
+      fail('wake lock unavailable', err); // not fatal; slideshow still runs
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && running && !wakeLock) acquireWakeLock();
+  });
+
+  // ---------------- Fullscreen ----------------
+
+  const FS_SUPPORTED = !!(document.documentElement.requestFullscreen ||
+                          document.documentElement.webkitRequestFullscreen);
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function enterFullscreen() {
+    const el = document.documentElement;
+    const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!fn) return;
+    try {
+      Promise.resolve(fn.call(el)).catch((err) => fail('fullscreen refused', err));
+    } catch (e) {
+      fail('fullscreen threw', e);
+    }
+  }
+
+  function syncFsHint() {
+    // Floating button appears only while the slideshow runs windowed.
+    fsFloat.hidden = !(running && FS_SUPPORTED && !isFullscreen());
+    fsBtn.hidden = !FS_SUPPORTED;
+    fsBtn.textContent = isFullscreen() ? '⛶ Exit fullscreen' : '⛶ Fullscreen';
+  }
+
+  document.addEventListener('fullscreenchange', syncFsHint);
+  document.addEventListener('webkitfullscreenchange', syncFsHint);
+
+  // Each of these is its own user gesture, which is exactly what the
+  // fullscreen API requires. Never call these from the picker's handler.
+  fsBtn.addEventListener('click', () => {
+    isFullscreen() ? exitFullscreen() : enterFullscreen();
+  });
+  fsFloat.addEventListener('click', (e) => {
+    e.stopPropagation(); // don't let the stage treat this as a skip tap
+    enterFullscreen();
+  });
+
+  function exitFullscreen() {
+    const fn = document.exitFullscreen || document.webkitExitFullscreen;
+    if (!document.fullscreenElement || !fn) return;
+    try { Promise.resolve(fn.call(document)).catch(() => {}); } catch (e) { /* ignore */ }
+  }
+
+  // ---------------- Start / stop ----------------
+
+  startBtn.addEventListener('click', () => {
+    // Open the folder picker ONLY. Do not request fullscreen here.
+    //
+    // requestFullscreen() and input.click() both consume the same single
+    // transient user activation, so they cannot share one gesture. Measured
+    // in real Chrome (.frame-test/verify-picker.js):
+    //   fullscreen then click()  -> fullscreen granted, chooser BLOCKED
+    //   click() then fullscreen  -> chooser opens, fullscreen REJECTED
+    //   fullscreen in `change`   -> REJECTED (file selection is not an activation)
+    // Fullscreen therefore has to wait for a genuinely separate tap; onTap()
+    // spends the first one on it.
+    picker.click();
+  });
+
+  picker.addEventListener('change', () => {
+    const files = Array.from(picker.files || []);
+    const items = buildPlaylist(files);
+
+    if (!items.length) {
+      exitFullscreen();
+      fatal('No photos or videos in that folder',
+            `Looked at ${files.length} file(s) and found nothing with a supported extension ` +
+            `(jpg, png, webp, gif, avif, bmp, mp4, webm, mov, m4v).`);
+      return;
+    }
+
+    playlist.forEach((i) => URL.revokeObjectURL(i.url));
+    playlist = shuffle(items);
+    cursor = 0;
+    front = 1;
+    generation = 0;
+    consecutiveFailures = 0;
+    errors.length = 0;
+    dbg.shown = 0;
+    dwellMs = Math.max(1, Number(durInput.value) || 10) * 1000;
+
+    setupEl.hidden = true;
+    fatalEl.hidden = true;
+    document.body.classList.add('playing');
+    running = true;
+
+    syncFsHint();
+    acquireWakeLock();
+    advance();
+  });
+
+  function stop() {
+    running = false;
+    generation++;
+    clearTimeout(timer);
+    timer = null;
+    layers.forEach((l) => {
+      l.root.classList.remove('visible');
+      try { l.video.pause(); } catch (e) { /* ignore */ }
+      l.img.classList.remove('kb', 'd1', 'd2', 'd3');
+    });
+    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+    exitFullscreen();
+    document.body.classList.remove('playing');
+    setupEl.hidden = false;
+    fatalEl.hidden = true;
+    statusEl.hidden = true;
+    fsFloat.hidden = true;
+    syncFsHint();
+    dbg.state = 'idle';
+  }
+
+  // ---------------- Input ----------------
+  // Single tap skips, double tap exits. Resolved by tap count on a short
+  // window rather than by racing two timers against each other.
+
+  let taps = 0;
+  let tapTimer = null;
+
+  function onTap() {
+    if (!fatalEl.hidden) { stop(); return; }
+    if (!running) return;
+
+    taps++;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(() => {
+      const n = taps;
+      taps = 0;
+      if (n >= 2) stop();
+      else advance();
+    }, 300);
+  }
+
+  $('stage').addEventListener('click', onTap);
+  fatalEl.addEventListener('click', onTap);
+
+  document.addEventListener('keydown', (e) => {
+    if (!running) return;
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); advance(); }
+    else if (e.key === 'Escape') stop();
+  });
+})();
+</script>
+</body>
+</html>
