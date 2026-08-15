@@ -134,7 +134,7 @@
   #startBtn:hover { background: #fff; }
   #startBtn:active { transform: scale(0.96); }
 
-  #picker { display: none; }
+  #picker, #filePicker { display: none; }
 
   /* ---------------- Diagnostics ---------------- */
 
@@ -229,7 +229,7 @@
 
 <div id="setup">
   <h1>Photo Frame</h1>
-  <p>Pick a folder of photos and videos. They play shuffled, on repeat, and the screen won't sleep. Fullscreen is a separate button because browsers only allow one such action per tap.</p>
+  <p>Pick a folder of photos and videos &mdash; or individual files if Android refuses the folder (it blocks Downloads and the storage root; a subfolder like Pictures works). They play shuffled, on repeat, and the screen won't sleep. Fullscreen is a separate button because browsers only allow one such action per tap.</p>
   <label class="field">
     Image duration
     <input type="number" id="duration" min="1" max="600" step="1" value="10">
@@ -237,9 +237,13 @@
   </label>
   <div class="buttons">
     <button id="startBtn" type="button">Choose Folder &amp; Start</button>
+    <button id="fileBtn" class="btn-ghost" type="button">Choose Files</button>
     <button id="fsBtn" class="btn-ghost" type="button">⛶ Fullscreen</button>
   </div>
   <input type="file" id="picker" webkitdirectory directory multiple>
+  <!-- No webkitdirectory: goes through Android's file/media picker, which has
+       none of the Storage Access Framework's directory-tree restrictions. -->
+  <input type="file" id="filePicker" accept="image/*,video/*" multiple>
 </div>
 
 <div id="status" hidden></div>
@@ -264,6 +268,8 @@
   const setupEl = $('setup');
   const startBtn = $('startBtn');
   const picker = $('picker');
+  const fileBtn = $('fileBtn');
+  const filePicker = $('filePicker');
   const durInput = $('duration');
   const statusEl = $('status');
   const fatalEl = $('fatal');
@@ -631,20 +637,24 @@
     //   fullscreen then click()  -> fullscreen granted, chooser BLOCKED
     //   click() then fullscreen  -> chooser opens, fullscreen REJECTED
     //   fullscreen in `change`   -> REJECTED (file selection is not an activation)
-    // Fullscreen therefore has to wait for a genuinely separate tap; onTap()
-    // spends the first one on it.
+    // Fullscreen therefore needs a genuinely separate tap of its own, which is
+    // what #fsBtn (setup screen) and #fsFloat (over the slideshow) are for.
     picker.click();
   });
 
-  picker.addEventListener('change', () => {
-    const files = Array.from(picker.files || []);
+  // Same reasoning: its own button, its own tap, its own activation.
+  fileBtn.addEventListener('click', () => { filePicker.click(); });
+
+  function startFrom(files) {
     const items = buildPlaylist(files);
 
     if (!items.length) {
       exitFullscreen();
-      fatal('No photos or videos in that folder',
+      fatal('No photos or videos selected',
             `Looked at ${files.length} file(s) and found nothing with a supported extension ` +
-            `(jpg, png, webp, gif, avif, bmp, mp4, webm, mov, m4v).`);
+            `(jpg, png, webp, gif, avif, bmp, mp4, webm, mov, m4v). ` +
+            `If Android said "Can't use this folder", tap Choose Files instead, ` +
+            `or pick a subfolder such as Pictures or DCIM.`);
       return;
     }
 
@@ -666,6 +676,12 @@
     syncFsHint();
     acquireWakeLock();
     advance();
+  }
+
+  // Both inputs feed the identical path; buildPlaylist() takes a File[] and
+  // doesn't care whether it came from a directory tree or a multi-select.
+  [picker, filePicker].forEach((input) => {
+    input.addEventListener('change', () => startFrom(Array.from(input.files || [])));
   });
 
   function stop() {
