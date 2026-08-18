@@ -138,21 +138,6 @@
 
   /* ---------------- Diagnostics ---------------- */
 
-  #status {
-    position: fixed;
-    left: 14px; top: 12px;
-    z-index: 30;
-    max-width: 60vw;
-    padding: 6px 10px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.55);
-    color: rgba(255, 255, 255, 0.62);
-    font: 12px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace;
-    white-space: pre-wrap;
-    pointer-events: none;
-  }
-  #status[hidden] { display: none; }
-
   /* Fatal panel — the frame must never just sit black in silence. */
   #fatal {
     position: fixed;
@@ -246,7 +231,6 @@
   <input type="file" id="filePicker" accept="image/*,video/*" multiple>
 </div>
 
-<div id="status" hidden></div>
 <button id="fsFloat" class="btn-ghost" type="button" hidden>⛶ Fullscreen</button>
 <div id="fatal" hidden></div>
 
@@ -262,7 +246,6 @@
   const MAX_CONSECUTIVE_FAILURES = 8;
 
   const params = new URLSearchParams(location.search);
-  const QUIET = params.has('quiet');
 
   const $ = (id) => document.getElementById(id);
   const setupEl = $('setup');
@@ -271,7 +254,6 @@
   const fileBtn = $('fileBtn');
   const filePicker = $('filePicker');
   const durInput = $('duration');
-  const statusEl = $('status');
   const fatalEl = $('fatal');
   const fsBtn = $('fsBtn');
   const fsFloat = $('fsFloat');
@@ -314,23 +296,13 @@
 
   function setState(state, extra) {
     dbg.state = state;
-    render();
     if (extra) console.log('[frame]', state, extra);
-  }
-
-  function render() {
-    if (QUIET || !running) { statusEl.hidden = true; return; }
-    statusEl.hidden = false;
-    statusEl.textContent =
-      `${dbg.index + 1}/${playlist.length}  ${dbg.type}  ${dbg.name}\n` +
-      `${dbg.state}` + (errors.length ? `  ·  ${errors.length} skipped` : '');
   }
 
   function fail(msg, err) {
     const line = err ? `${msg}: ${err.message || err}` : msg;
     errors.push(line);
     console.error('[frame]', line);
-    render();
   }
 
   function fatal(title, detail) {
@@ -699,7 +671,6 @@
     document.body.classList.remove('playing');
     setupEl.hidden = false;
     fatalEl.hidden = true;
-    statusEl.hidden = true;
     fsFloat.hidden = true;
     syncFsHint();
     dbg.state = 'idle';
